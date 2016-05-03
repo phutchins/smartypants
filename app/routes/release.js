@@ -16,21 +16,28 @@ module.exports = function(router) {
     console.log("[Request] Looking for OS: " + os + " project: " + project);
 
     var buildResponse = function(releases) {
-      releases.forEach(function(release) {
-        if (release.name.match('win32')) {
-          releaseURLs['win32'] = release.browser_download_url;
-          //releaseURLs['win32'] =
-        };
-        if (release.name.match('osx64')) {
-          releaseURLs['osx64'] = release.browser_download_url;
-        };
-        if (release.name.match('amd64')) {
-          releaseURLs['amd64'] = release.browser_download_url;
-        };
-      });
+      var releaseURL = "https://github.com/Storj/" + project + "/releases/latest";
 
-      sendResponse(releaseURLs[os]);
+      if (releases) {
+        releases.forEach(function(release) {
+          if (release.name.match('win32')) {
+            releaseURLs['win32'] = release.browser_download_url;
+            //releaseURLs['win32'] =
+          };
+          if (release.name.match('osx64')) {
+            releaseURLs['osx64'] = release.browser_download_url;
+          };
+          if (release.name.match('amd64')) {
+            releaseURLs['amd64'] = release.browser_download_url;
+          };
+        });
 
+        if (os) {
+          releaseURL = releaseURLs[os] || releaseURL;
+        }
+      }
+
+      sendResponse(releaseURL);
     }
 
     var sendResponse = function(assetURL) {
@@ -53,34 +60,35 @@ module.exports = function(router) {
       }
     }
 
-    console.log("Path: " + requestOptions.path);
+    if (os && project) {
+      var request = https.request(requestOptions, function(resp) {
+        var data = "";
+        resp.setEncoding('utf8');
+        resp.on('data', function (chunk) {
+          data += chunk;
+        });
 
-    var request = https.request(requestOptions, function(resp) {
-      var data = "";
-      resp.setEncoding('utf8');
-      resp.on('data', function (chunk) {
-        data += chunk;
+        resp.on('end', function () {
+          var responseCode = resp.statusCode;
+
+          if (responseCode == 401) {
+            var errorMessage = JSON.parse(data).message;
+
+            console.log("[ERROR](" + responseCode + ") " + errorMessage);
+
+            return res.send("[ERROR](" + responseCode + ") " + errorMessage);
+          }
+
+          var releases = JSON.parse(data).assets;
+
+          buildResponse(releases);
+        });
       });
 
-      resp.on('end', function () {
-        var responseCode = resp.statusCode;
-
-        console.log("[RESPONSE] " + data);
-        if (responseCode == 401) {
-          var errorMessage = JSON.parse(data).message;
-
-          console.log("[ERROR](" + responseCode + ") " + errorMessage);
-
-          return res.send("[ERROR](" + responseCode + ") " + errorMessage);
-        }
-
-        var releases = JSON.parse(data).assets;
-
-        buildResponse(releases);
-      });
-    });
-
-    request.end();
+      request.end();
+    } else {
+      res.send("Please provide valid os and project");
+    }
   });
 };
 
