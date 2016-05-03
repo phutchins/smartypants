@@ -45,7 +45,7 @@ module.exports = function(router) {
         "url": assetURL
       }
       console.log("[sendResponse] Sending response: " + assetURL);
-      res.send(assetURL);
+      res.send(responseJSON);
     };
 
     var apiToken = config.get('GITHUB_API_TOKEN');
