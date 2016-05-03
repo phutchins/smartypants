@@ -11,9 +11,22 @@ module.exports = function(router) {
   .get(function(req, res) {
     var releaseURLs = {};
     var os = req.param('os');
+    var osKey;
     var project = req.param('project');
 
-    console.log("[Request] Looking for OS: " + os + " project: " + project);
+    switch(os) {
+      case "Windows":
+        osKey = 'win32';
+        break;
+      case "Mac OS":
+        osKey = 'osx64';
+        break;
+      case "Linux":
+        osKey = 'amd64';
+        break;
+    }
+
+    console.log("[Request] Looking for OS: " + os + " which translates to osTag: " + osKey + " project: " + project);
 
     var buildResponse = function(releases) {
       var releaseURL = "https://github.com/Storj/" + project + "/releases/latest";
@@ -32,8 +45,8 @@ module.exports = function(router) {
           };
         });
 
-        if (os) {
-          releaseURL = releaseURLs[os] || releaseURL;
+        if (osKey) {
+          releaseURL = releaseURLs[osKey] || releaseURL;
         }
       }
 
